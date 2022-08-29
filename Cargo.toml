@@ -30,7 +30,7 @@ optional = true
 version = "0.8"
 default-features = false
 
-features = ["render", "bevy_winit", "png", "vorbis", "bevy_audio"]
+features = ["render", "bevy_winit", "png"]
 
 
 # Dependencies for native only.

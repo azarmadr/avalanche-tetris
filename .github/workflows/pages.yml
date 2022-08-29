@@ -46,6 +46,6 @@ jobs:
           BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
           BUTLER_API_KEY: ${{ secrets.BUTLER_CREDENTIALS }}
           CHANNEL: html
-          ITCH_GAME: recall-stones
+          ITCH_GAME: avalanche-tetris
           ITCH_USER: azarmadr
           PACKAGE: dist

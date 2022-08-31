@@ -76,7 +76,7 @@ impl FromWorld for BoardAssets {
             },
             tray: SpriteMaterial { color: Color::PINK },
             sq: SpriteMaterial {
-                        texture: asset_server.load("sprites/red.png"),
+                        texture: asset_server.load("sprites/red1.png"),
                 color: Color::NONE
             },
             font: asset_server.load("fonts/FiraMono-Medium.ttf"),

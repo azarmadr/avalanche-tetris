@@ -77,19 +77,17 @@ pub fn spawn_shape(
         }
         // *local = (*local + 1) % 3;
         grid.play(&dir);
-        let anim = |c: Color| {
-            Animator::new(Tween::new(
+        let anim = |c: Color, n| Tween::new(
                 EaseFunction::QuadraticIn,
                 TweeningType::Once,
-                ANIM_TIME,
+                ANIM_TIME*n,
                 BeTween::with_lerp(move |e: &mut UiColor, s: &UiColor, r| {
                     let start: Vec4 = s.0.into();
                     *e = UiColor(start.lerp(c.into(), r).into());
                 }),
-            ))
-        };
+            );
         for (e, _, _) in color.iter() {
-            cmd.entity(e).insert(anim(assets.sq.color));
+            cmd.entity(e).insert(Animator::new(anim(assets.sq.color, 1)));
         }
         let w = grid.width();
         for dir in Dir::iter() {
@@ -97,7 +95,7 @@ pub fn spawn_shape(
                 for (e, &id, d) in color.iter() {
                     if d.map_or(false, |&x| dir == x) && brick.contains(id.0, dir.if_h(4, w)) {
                         cmd.entity(e)
-                            .insert(anim(assets.brick.get(&brick.2).unwrap().color));
+                            .insert(Animator::new(anim(assets.brick.get(&brick.2).unwrap().color,1)));
                     }
                 }
             }
@@ -106,15 +104,14 @@ pub fn spawn_shape(
             for (e, &id, d) in color.iter() {
                 if d.is_none() && brick.contains(id.0, w) {
                     cmd.entity(e)
-                        .insert(anim(assets.brick.get(&brick.2).unwrap().color));
+                        .insert(Animator::new(anim(assets.brick.get(&brick.2).unwrap().color,1)));
                 }
             }
         }
         for dot in grid.clear_lines() {
             for (e, &id, d) in color.iter() {
                 if d.is_none() && id.0 == dot {
-                    cmd.entity(e).insert(anim(Color::ORANGE_RED));
-                    //cmd.entity(e).insert(anim(assets.sq.color));
+                    cmd.entity(e).insert(Animator::new(anim(Color::ORANGE_RED,7).then(anim(Color::NONE,3))));
                 }
             }
         }

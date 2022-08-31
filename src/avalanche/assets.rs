@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use autodefault::autodefault;
+use std::collections::HashMap;
 
 use bevy::prelude::*;
 use bevy::render::texture::DEFAULT_IMAGE_HANDLE;
@@ -75,7 +75,10 @@ impl FromWorld for BoardAssets {
                 color: Color::rgb_u8(112, 112, 255),
             },
             tray: SpriteMaterial { color: Color::PINK },
-            sq: SpriteMaterial { color: Color::NONE },
+            sq: SpriteMaterial {
+                        texture: asset_server.load("sprites/red.png"),
+                color: Color::NONE
+            },
             font: asset_server.load("fonts/FiraMono-Medium.ttf"),
             brick: Shape::iter()
                 .zip(
@@ -88,7 +91,10 @@ impl FromWorld for BoardAssets {
                         Color::PURPLE,
                     ]
                     .iter()
-                    .map(|&color| SpriteMaterial { color }),
+                    .map(|&color| SpriteMaterial {
+                        color,
+                        texture: asset_server.load("sprites/red.png"),
+                    }),
                 )
                 .collect(),
         }
@@ -159,26 +165,28 @@ impl BoardAssets {
         };
     }
     */
-    #[autodefault(except(TextStyle,TextAlignment))]
+    #[autodefault(except(TextStyle, TextAlignment))]
     pub fn write_text<S: Into<String>>(&self, label: S) -> TextBundle {
-            TextBundle {
-                style: Style {
-                    margin: UiRect {
-                        right: Val::Px(1.),
-                        left: Val::Px(1.),
-                    },
-                    flex_basis: Val::Px(0.),
+        TextBundle {
+            style: Style {
+                margin: UiRect {
+                    right: Val::Px(1.),
+                    left: Val::Px(1.),
                 },
-                text: Text::from_section(
-                    label.into(),
-                    TextStyle {
-                        font: self.font.clone(),
-                        font_size: 18.,
-                        color: Color::RED,
-                    }).with_alignment( TextAlignment {
-                        vertical: VerticalAlign::Center,
-                        horizontal: HorizontalAlign::Center,
-                    }),
-            }
+                flex_basis: Val::Px(0.),
+            },
+            text: Text::from_section(
+                label.into(),
+                TextStyle {
+                    font: self.font.clone(),
+                    font_size: 18.,
+                    color: Color::RED,
+                },
+            )
+            .with_alignment(TextAlignment {
+                vertical: VerticalAlign::Center,
+                horizontal: HorizontalAlign::Center,
+            }),
+        }
     }
 }

@@ -6,7 +6,9 @@ edition = "2021"
 
 [features]
 default = []
-debug = ["bevy-inspector-egui", "menu-plugin/debug"]
+debug = ["bevy-inspector-egui",
+# "menu-plugin/debug"
+]
 
 [lib]
 crate-type = ["lib", "cdylib", "staticlib"]

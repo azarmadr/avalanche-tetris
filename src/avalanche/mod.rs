@@ -2,7 +2,6 @@ use {
     assets::*,
     autodefault::autodefault,
     bevy::{ecs::schedule::StateData, prelude::*},
-    components::*,
     grid::*,
     // menu::MenuPlugin,
     menu_plugin::MenuMaterials,
@@ -31,7 +30,7 @@ use bevy_inspector_egui::InspectorPlugin;
 pub enum AppState {
     InGame,
     Splash,
-    Menu,
+    _Menu,
 }
 use AppState::*;
 #[derive(Deref)]
@@ -70,8 +69,8 @@ impl<T: StateData + Copy> Plugin for AvalancheGamePlugin<T> {
         #[cfg(feature = "debug")]
         {
             app
-                // .add_plugin(InspectorPlugin::<Grid>::new())
-                // .add_plugin(InspectorPlugin::<BoardAssets>::new())
+                // .add_plugin(InspectorPlugin::<GridsnBricks>::new())
+                .add_plugin(InspectorPlugin::<BoardAssets>::new())
                 ;
         }
     }
@@ -85,7 +84,7 @@ pub fn create_grid(
     assets: Res<BoardAssets>,
 ) {
     // let mut rng = rand::thread_rng();
-    let grid = Grid::init();
+    let grid = GridsnBricks::init();
     let size = menu.size / (grid.height() + 2 * 4) as f32;
     cmd.spawn_bundle(assets.bg.node(Style {
         position_type: PositionType::Absolute,

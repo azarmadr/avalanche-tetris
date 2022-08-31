@@ -1,19 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <title>avalanche-tetris</title>
-      <link data-trunk rel="copy-dir" href="assets"/>
-</head>
-<body style="margin: 0 !important; padding: 0 !important;">
-<script type="module">
-    import init from './avalanche_tetris.js'
+    <link data-trunk rel="copy-dir" href="assets" />
+    <link data-trunk rel="inline" href="resources/web/styles.css" />
+    <meta
+      name="viewport"
+      content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+  </head>
+  <body style="margin: 0 !important; padding: 0 !important">
+    <script type="module">
+      import init from "./avalanche-tetris.js";
 
-    init()
-    
-    document.addEventListener('contextmenu', function (evt) {
+      init();
+      document.addEventListener("contextmenu", function (evt) {
         evt.preventDefault();
-    })
-    
-</script>
-</body>
+      });
+    </script>
+  </body>
 </html>

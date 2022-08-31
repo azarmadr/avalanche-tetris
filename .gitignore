@@ -14,3 +14,4 @@ Cargo.lock
 bacon.toml
 .cargo/config.toml
 .obsidian
+dist/

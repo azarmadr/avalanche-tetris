@@ -11,9 +11,7 @@
     clippy::module_name_repetitions,
     clippy::redundant_pub_crate
 )]
-use bevy::log::{Level, LogSettings};
-#[cfg(feature = "debug")]
-use bevy_inspector_egui::{InspectorPlugin, WorldInspectorPlugin};
+use bevy::log::LogSettings;
 use {avalanche::*, bevy::prelude::*, menu_plugin::MenuMaterials, std::time::Duration};
 
 mod avalanche;
@@ -47,8 +45,7 @@ pub fn main() {
 
     // Debug hierarchy inspector
     #[cfg(feature = "debug")]
-    app.add_plugin(WorldInspectorPlugin::new())
-        .add_plugin(InspectorPlugin::<MenuMaterials>::new());
+    app.add_plugin(bevy_inspector_egui::WorldInspectorPlugin::new());
 
     app.run();
 }

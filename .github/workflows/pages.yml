@@ -28,10 +28,10 @@ jobs:
       - name: Install trunk
         uses: jetli/trunk-action@v0.1.0
         with:
-          version: 'latest'
+          version: "latest"
       - name: Build Release
         run: |
-          trunk build --release --public-url "${GITHUB_REPOSITORY#*/}"
+          trunk build --release --public-url "${GITHUB_REPOSITORY#*/}" --filehash false
       - name: optimize Wasm
         uses: NiklasEi/wasm-opt-action@v2
         with:
@@ -40,14 +40,12 @@ jobs:
         uses: JamesIves/github-pages-deploy-action@v4.2.5
         with:
           branch: gh-pages
-          folder: dist
-      - name: Build Release
-        run: trunk build --release
-      - uses: josephbmanley/butler-publish-itchio-action@master
-        env:
-          BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
-          BUTLER_API_KEY: ${{ secrets.BUTLER_CREDENTIALS }}
-          CHANNEL: html
-          ITCH_GAME: avalanche-tetris
-          ITCH_USER: azarmadr
-          PACKAGE: dist
+          folder:
+            dist
+            #- uses: josephbmanley/butler-publish-itchio-action@master
+            #  env:
+            #    BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
+            #    CHANNEL: html
+            #    ITCH_GAME: avalanche-tetris
+            #    ITCH_USER: azarmadr
+            #    PACKAGE: dist

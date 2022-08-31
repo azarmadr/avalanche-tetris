@@ -4,11 +4,11 @@ use strum::IntoEnumIterator;
 
 use crate::avalanche::shapes::Brick;
 
-use super::ScoreBoard;
 use super::assets::BoardAssets;
 use super::components::Idx;
-use super::grid::Grid;
+use super::grid::GridsnBricks;
 use super::shapes::Dir;
+use super::ScoreBoard;
 
 use {super::Shape, bevy::prelude::*};
 
@@ -47,11 +47,11 @@ impl<T: Clone> Lens<T> for BeTween<T> {
 pub fn spawn_shape(
     // mut cmd: Commands,
     keys: Res<Input<KeyCode>>,
-    mut grid: ResMut<Grid>,
-    mut local: Local<u8>,
+    mut grid: ResMut<GridsnBricks>,
+    // mut local: Local<u8>,
     assets: Res<BoardAssets>,
     color: Query<(Entity, &Idx, Option<&Dir>)>,
-    mut score: Query<&mut Text,With<ScoreBoard>>,
+    mut score: Query<&mut Text, With<ScoreBoard>>,
     mut cmd: Commands,
 ) {
     if let Some(dir) = if keys.just_pressed(KeyCode::Left) {
@@ -65,22 +65,20 @@ pub fn spawn_shape(
     } else {
         None
     } {
-        if *local==0 {
+        // if *local == 0 
+        {
             let mut rng = rand::thread_rng();
             let dir = Dir::iter().choose(&mut rng).unwrap();
-            let bdir = Dir::iter().choose(&mut rng).unwrap();
-            let shape = Shape::iter().choose(&mut rng).unwrap();
-            let mut brick = Brick::from(shape, bdir);
+            let mut brick = Brick::iterator().choose(&mut rng).unwrap();
             let max = grid.width() - brick.dim_in(dir.turn());
             brick.1 = rng.gen_range(0..max) * dir.if_h(4, 1);
 
-            trace!("max: {max} shape: {shape:?} dir: {dir:?} bdir: {bdir:?} brick: {brick:?}");
-
             grid.occupy_tray(dir, brick);
         }
-        *local = (*local+1)%3;
+        // *local = (*local + 1) % 3;
         grid.play(&dir);
-let anim = |c:Color| Animator::new(Tween::new(
+        let anim = |c: Color| {
+            Animator::new(Tween::new(
                 EaseFunction::QuadraticIn,
                 TweeningType::Once,
                 ANIM_TIME,
@@ -88,37 +86,40 @@ let anim = |c:Color| Animator::new(Tween::new(
                     let start: Vec4 = s.0.into();
                     *e = UiColor(start.lerp(c.into(), r).into());
                 }),
-            ));
-    for (e, _, _) in color.iter() {
-        cmd.entity(e).insert(anim(assets.sq.color));
-    }
-    let w = grid.width();
-    for dir in Dir::iter() {
-        for brick in grid.tray_bricks.get(&dir).unwrap() {
-            for (e, &id, d) in color.iter() {
-                if d.map_or(false, |&x| dir == x)
-                    && brick.contains(id.0, dir.if_h(4, w ))
-                {
-                    cmd.entity(e).insert(anim(assets.brick.get(&brick.2).unwrap().color));
+            ))
+        };
+        for (e, _, _) in color.iter() {
+            cmd.entity(e).insert(anim(assets.sq.color));
+        }
+        let w = grid.width();
+        for dir in Dir::iter() {
+            for brick in grid.tray_bricks.get(&dir).unwrap() {
+                for (e, &id, d) in color.iter() {
+                    if d.map_or(false, |&x| dir == x) && brick.contains(id.0, dir.if_h(4, w)) {
+                        cmd.entity(e)
+                            .insert(anim(assets.brick.get(&brick.2).unwrap().color));
+                    }
                 }
             }
         }
-    }
-    for brick in grid.bricks.iter() {
-        for (e, &id, d) in color.iter() {
-            if d.is_none() && brick.contains(id.0, w) {
-                cmd.entity(e).insert(anim(assets.brick.get(&brick.2).unwrap().color));
+        for brick in grid.bricks.iter() {
+            for (e, &id, d) in color.iter() {
+                if d.is_none() && brick.contains(id.0, w) {
+                    cmd.entity(e)
+                        .insert(anim(assets.brick.get(&brick.2).unwrap().color));
+                }
             }
         }
-    }
-    for brick in grid.clear_lines(){
-        for (e, &id, d) in color.iter() {
-            if d.is_none() && brick.contains(id.0, w) {
-                cmd.entity(e).insert(anim(Color::ORANGE_RED));
-                //cmd.entity(e).insert(anim(assets.sq.color));
+        for dot in grid.clear_lines() {
+            for (e, &id, d) in color.iter() {
+                if d.is_none() && id.0 == dot {
+                    cmd.entity(e).insert(anim(Color::ORANGE_RED));
+                    //cmd.entity(e).insert(anim(assets.sq.color));
+                }
             }
         }
-    }
-    score.single_mut().sections[0].value = format!("Score: {}",grid.score());
+        info!("New Turn\n");
+        grid.bricks.iter().for_each(|b|trace!("{b:?}"));
+        score.single_mut().sections[0].value = format!("Score: {}", grid.score());
     }
 }

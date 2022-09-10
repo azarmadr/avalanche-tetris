@@ -84,7 +84,7 @@ pub fn create_grid(
     assets: Res<BoardAssets>,
 ) {
     // let mut rng = rand::thread_rng();
-    let grid = GridsnBricks::init();
+    let grid = GridsnBricks::init(7,7);
     let size = menu.size / (grid.height() + 2 * 4) as f32;
     cmd.spawn_bundle(assets.bg.node(Style {
         position_type: PositionType::Absolute,

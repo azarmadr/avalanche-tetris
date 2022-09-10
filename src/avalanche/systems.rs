@@ -1,5 +1,3 @@
-use rand::seq::IteratorRandom;
-use rand::Rng;
 use strum::IntoEnumIterator;
 
 use crate::avalanche::shapes::Brick;
@@ -48,7 +46,7 @@ pub fn spawn_shape(
     // mut cmd: Commands,
     keys: Res<Input<KeyCode>>,
     mut grid: ResMut<GridsnBricks>,
-    // mut local: Local<u8>,
+    mut local: Local<bool>,
     assets: Res<BoardAssets>,
     color: Query<(Entity, &Idx, Option<&Dir>)>,
     mut score: Query<&mut Text, With<ScoreBoard>>,
@@ -65,37 +63,36 @@ pub fn spawn_shape(
     } else {
         None
     } {
-        // if *local == 0 
-        {
-            let mut rng = rand::thread_rng();
-            let dir = Dir::iter().choose(&mut rng).unwrap();
-            let mut brick = Brick::iterator().choose(&mut rng).unwrap();
-            let max = grid.width() - brick.dim_in(dir.turn());
-            brick.1 = rng.gen_range(0..max) * dir.if_h(4, 1);
-
-            grid.occupy_tray(dir, brick);
-        }
-        // *local = (*local + 1) % 3;
+        *local = false;
         grid.play(&dir);
-        let anim = |c: Color, n| Tween::new(
+        grid.gen_tray_brick();
+    }
+    if !*local {
+        *local = true;
+        let anim = |c: Color, n| {
+            Tween::new(
                 EaseFunction::QuadraticIn,
                 TweeningType::Once,
-                ANIM_TIME*n,
+                ANIM_TIME * n,
                 BeTween::with_lerp(move |e: &mut UiColor, s: &UiColor, r| {
                     let start: Vec4 = s.0.into();
                     *e = UiColor(start.lerp(c.into(), r).into());
                 }),
-            );
+            )
+        };
         for (e, _, _) in color.iter() {
-            cmd.entity(e).insert(Animator::new(anim(assets.sq.color, 1)));
+            cmd.entity(e)
+                .insert(Animator::new(anim(assets.sq.color, 1)));
         }
         let w = grid.width();
         for dir in Dir::iter() {
             for brick in grid.tray_bricks.get(&dir).unwrap() {
                 for (e, &id, d) in color.iter() {
                     if d.map_or(false, |&x| dir == x) && brick.contains(id.0, dir.if_h(4, w)) {
-                        cmd.entity(e)
-                            .insert(Animator::new(anim(assets.brick.get(&brick.2).unwrap().color,1)));
+                        cmd.entity(e).insert(Animator::new(anim(
+                            assets.brick.get(&brick.2).unwrap().color,
+                            1,
+                        )));
                     }
                 }
             }
@@ -103,20 +100,24 @@ pub fn spawn_shape(
         for brick in grid.bricks.iter() {
             for (e, &id, d) in color.iter() {
                 if d.is_none() && brick.contains(id.0, w) {
-                    cmd.entity(e)
-                        .insert(Animator::new(anim(assets.brick.get(&brick.2).unwrap().color,1)));
+                    cmd.entity(e).insert(Animator::new(anim(
+                        assets.brick.get(&brick.2).unwrap().color,
+                        1,
+                    )));
                 }
             }
         }
         for dot in grid.clear_lines() {
             for (e, &id, d) in color.iter() {
                 if d.is_none() && id.0 == dot {
-                    cmd.entity(e).insert(Animator::new(anim(Color::ORANGE_RED,7).then(anim(Color::NONE,3))));
+                    cmd.entity(e).insert(Animator::new(
+                        anim(Color::ORANGE_RED, 7).then(anim(Color::NONE, 3)),
+                    ));
                 }
             }
         }
         info!("New Turn\n");
-        grid.bricks.iter().for_each(|b|trace!("{b:?}"));
+        grid.bricks.iter().for_each(|b| trace!("{b:?}"));
         score.single_mut().sections[0].value = format!("Score: {}", grid.score());
     }
 }

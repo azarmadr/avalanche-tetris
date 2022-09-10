@@ -155,6 +155,7 @@ impl Brick {
         .iter()
         .map(|&(shape, dir)| Self::from(shape, dir))
     }
+    pub fn orig(&self) -> u8 {self.1}
     pub fn iter_for_width(&self, width: u8) -> impl Iterator<Item = usize> + '_ {
         self.0.iter().map(move |x| x.to_idx(self.1, width))
     }

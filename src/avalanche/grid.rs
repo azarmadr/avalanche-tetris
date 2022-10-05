@@ -9,17 +9,17 @@ use super::assets::BoardAssets;
 use super::components::Idx;
 use super::shapes::{Brick, Dir};
 
-pub type Sq = bool;
+pub type Sq = u8;
 
-fn can_occupy(grid: &[bool], width: u8, brick: &Brick) -> bool {
+fn can_occupy(grid: &[Sq], width: u8, brick: &Brick) -> bool {
     info!("{width} {brick:?}");
-    !brick.iter_for_width(width).any(|d| grid[d])
+    !brick.iter_for_width(width).any(|d| grid[d] > 0)
 }
 
-fn occupy(grid: &mut [bool], width: u8, brick: &Brick) -> bool {
+fn occupy(grid: &mut [Sq], width: u8, brick: &Brick) -> bool {
     let can_occupy = can_occupy(grid, width, brick);
     if can_occupy {
-        brick.iter_for_width(width).for_each(|d| grid[d] = true)
+        brick.iter_for_width(width).for_each(|d| grid[d] = 1)
     }
     can_occupy
 }
@@ -39,10 +39,10 @@ pub struct GridsnBricks {
 impl GridsnBricks {
     pub fn init(height: u8, width: u8) -> Self {
         let mut ret = Self {
-            grid: vec![false; (height * width).into()],
+            grid: vec![0; (height * width).into()],
             bricks: vec![],
             tray: Dir::iter()
-                .map(|dir| (dir, vec![false; dir.if_h(height, width) as usize * 4]))
+                .map(|dir| (dir, vec![0; dir.if_h(height, width) as usize * 4]))
                 .collect(),
             tray_bricks: Dir::iter().map(|dir| (dir, vec![])).collect(),
             width,
@@ -52,7 +52,7 @@ impl GridsnBricks {
         ret.gen_tray_brick();
         ret
     }
-    pub const fn width(&self) -> u8 {
+    pub const fn _width(&self) -> u8 {
         self.width
     }
     pub const fn height(&self) -> u8 {
@@ -77,13 +77,15 @@ impl GridsnBricks {
                 let width = dir.if_h(4, self.width);
                 brick
                     .iter_for_width(width)
-                    .for_each(|d| self.tray.get_mut(dir).unwrap()[d] = false);
+                    .for_each(|d| self.tray.get_mut(dir).unwrap()[d] = 0);
             }
             brick.1 = orig;
             !occupied
         });
     }
-
+    pub fn get_dot_val(&self, id: usize, dir: Option<&Dir>) -> u8 {
+        dir.map_or_else(|| self.grid[id], |dir| self.tray.get(dir).unwrap()[id])
+    }
     pub fn gen_tray_brick(&mut self) {
         use rand::seq::IteratorRandom;
 
@@ -136,15 +138,16 @@ impl GridsnBricks {
                 }
                 let orig_p = dir.if_h(b.1 % self.width, b.1 / self.width);
                 if dir.if_tr(orig_p + b.dim_in(*dir) < self.width - 1, orig_p > 0) {
-                    b.iter_for_width(self.width)
-                        .for_each(|d| self.grid[d] = false);
-                    if !b.iter_for_width(self.width).any(|d| self.grid[delta(d)]) {
+                    b.iter_for_width(self.width).for_each(|d| self.grid[d] = 0);
+                    if !b
+                        .iter_for_width(self.width)
+                        .any(|d| self.grid[delta(d)] > 0)
+                    {
                         b.1 = delta(b.1 as usize) as u8;
                         dirty = true;
                         ids.push(i)
                     }
-                    b.iter_for_width(self.width)
-                        .for_each(|d| self.grid[d] = true);
+                    b.iter_for_width(self.width).for_each(|d| self.grid[d] = 1);
                 } else {
                     ids.push(i)
                 }
@@ -161,12 +164,12 @@ impl GridsnBricks {
                 .grid
                 .iter()
                 .enumerate()
-                .all(|(i, &x)| i / w != idx || x);
+                .all(|(i, &x)| i / w != idx || x > 0);
             let v = self
                 .grid
                 .iter()
                 .enumerate()
-                .all(|(i, &x)| i % w != idx || x);
+                .all(|(i, &x)| i % w != idx || x > 0);
             if h {
                 self.score += 1
             }
@@ -193,7 +196,7 @@ impl GridsnBricks {
             self.bricks.retain(|b| !b.0.is_empty());
             self.bricks.append(&mut cleared_bricks);
             for &ele in cleared.iter() {
-                self.grid[ele] = false;
+                self.grid[ele] = self.grid[ele].saturating_sub(1);
             }
         }
         cleared

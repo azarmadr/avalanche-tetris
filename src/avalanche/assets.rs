@@ -16,7 +16,7 @@ pub struct SpriteMaterial {
 }
 impl SpriteMaterial {
     #[autodefault::autodefault]
-    pub fn sprite(&self, custom_size: Vec2, transform: Transform) -> SpriteBundle {
+    pub fn _sprite(&self, custom_size: Vec2, transform: Transform) -> SpriteBundle {
         SpriteBundle {
             sprite: Sprite {
                 custom_size: Some(custom_size),
@@ -34,7 +34,7 @@ impl SpriteMaterial {
             image: self.texture.clone().into(),
         }
     }
-    pub fn button(&self, style: Style) -> ButtonBundle {
+    pub fn _button(&self, style: Style) -> ButtonBundle {
         ButtonBundle {
             style,
             color: self.color.into(),
@@ -62,6 +62,7 @@ pub struct BoardAssets {
     pub bg: SpriteMaterial,
     pub sq: SpriteMaterial,
     pub brick: HashMap<Shape, SpriteMaterial>,
+    pub dot: Vec<SpriteMaterial>,
     pub font: Handle<Font>,
 }
 impl FromWorld for BoardAssets {
@@ -76,10 +77,24 @@ impl FromWorld for BoardAssets {
             },
             tray: SpriteMaterial { color: Color::PINK },
             sq: SpriteMaterial {
-                        texture: asset_server.load("sprites/red.png"),
-                color: Color::NONE
+                texture: asset_server.load("sprites/red.png"),
+                color: Color::NONE,
             },
             font: asset_server.load("fonts/FiraMono-Medium.ttf"),
+            dot: [
+                Color::LIME_GREEN,
+                Color::TEAL,
+                Color::AQUAMARINE,
+                Color::TOMATO,
+                Color::MAROON,
+                Color::PURPLE,
+            ]
+            .iter()
+            .map(|&color| SpriteMaterial {
+                color,
+                texture: asset_server.load("sprites/red.png"),
+            })
+            .collect(),
             brick: Shape::iter()
                 .zip(
                     [
@@ -101,70 +116,6 @@ impl FromWorld for BoardAssets {
     }
 }
 impl BoardAssets {
-    /*
-    pub fn count_color(&self, val: u8) -> Color {
-        match val {
-            1 => Color::GREEN,
-            2 => Color::WHITE,
-            3 => Color::YELLOW,
-            4 => Color::ORANGE,
-            _ => Color::RED,
-        }
-    }
-    pub fn spawn_card(&self, val: u16, size: f32) -> TextBundle {
-        let color = if val / 14 % 2 == 0 {
-            Color::BLACK
-        } else {
-            Color::RED
-        };
-        TextBundle {
-            style: Style {
-                flex_basis: Val::Px(0.),
-                ..Default::default()
-            },
-            text: Text {
-                sections: vec![TextSection {
-                    value: std::char::from_u32(33 + val as u32 % 56)
-                        .unwrap()
-                        .to_string(),
-                    style: TextStyle {
-                        color,
-                        font: self.card_font.clone(),
-                        font_size: size,
-                    },
-                }],
-                alignment: TextAlignment {
-                    vertical: VerticalAlign::Center,
-                    horizontal: HorizontalAlign::Center,
-                },
-            },
-            visibility: Visibility { is_visible: false },
-            ..Default::default()
-        }
-    }
-    pub fn flip_card_color(&self, mut color: &mut UiColor, visibility: bool) {
-        color.0 = match visibility {
-            true => {
-                if color.0 == self.card[0].0.color {
-                    self.card[0].1.color
-                } else if color.0 == self.card[1].0.color {
-                    self.card[1].1.color
-                } else {
-                    color.0
-                }
-            }
-            false => {
-                if color.0 == self.card[0].1.color {
-                    self.card[0].0.color
-                } else if color.0 == self.card[1].1.color {
-                    self.card[1].0.color
-                } else {
-                    color.0
-                }
-            }
-        };
-    }
-    */
     #[autodefault(except(TextStyle, TextAlignment))]
     pub fn write_text<S: Into<String>>(&self, label: S) -> TextBundle {
         TextBundle {

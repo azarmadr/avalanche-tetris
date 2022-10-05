@@ -1,14 +1,10 @@
-use strum::IntoEnumIterator;
-
-use crate::avalanche::shapes::Brick;
-
 use super::assets::BoardAssets;
 use super::components::Idx;
 use super::grid::GridsnBricks;
 use super::shapes::Dir;
 use super::ScoreBoard;
 
-use {super::Shape, bevy::prelude::*};
+use bevy::prelude::*;
 
 use bevy_tweening::{lens::*, *};
 
@@ -80,32 +76,18 @@ pub fn spawn_shape(
                 }),
             )
         };
-        for (e, _, _) in color.iter() {
-            cmd.entity(e)
-                .insert(Animator::new(anim(assets.sq.color, 1)));
-        }
-        let w = grid.width();
-        for dir in Dir::iter() {
-            for brick in grid.tray_bricks.get(&dir).unwrap() {
-                for (e, &id, d) in color.iter() {
-                    if d.map_or(false, |&x| dir == x) && brick.contains(id.0, dir.if_h(4, w)) {
-                        cmd.entity(e).insert(Animator::new(anim(
-                            assets.brick.get(&brick.2).unwrap().color,
-                            1,
-                        )));
+        for (e, &id, d) in color.iter() {
+            cmd.entity(e).insert(Animator::new(anim(
+                {
+                    let val = grid.get_dot_val(id.0, d) as usize;
+                    if val > 0 {
+                        assets.dot[val].color
+                    } else {
+                        assets.sq.color
                     }
-                }
-            }
-        }
-        for brick in grid.bricks.iter() {
-            for (e, &id, d) in color.iter() {
-                if d.is_none() && brick.contains(id.0, w) {
-                    cmd.entity(e).insert(Animator::new(anim(
-                        assets.brick.get(&brick.2).unwrap().color,
-                        1,
-                    )));
-                }
-            }
+                },
+                1,
+            )));
         }
         for dot in grid.clear_lines() {
             for (e, &id, d) in color.iter() {

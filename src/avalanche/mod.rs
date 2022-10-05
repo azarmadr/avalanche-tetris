@@ -5,9 +5,6 @@ use {
     grid::*,
     // menu::MenuPlugin,
     menu_plugin::MenuMaterials,
-    // rand::seq::SliceRandom,
-    // std::time::Duration,
-    shapes::*,
 };
 mod assets;
 mod components;
@@ -70,8 +67,7 @@ impl<T: StateData + Copy> Plugin for AvalancheGamePlugin<T> {
         {
             app
                 // .add_plugin(InspectorPlugin::<GridsnBricks>::new())
-                .add_plugin(InspectorPlugin::<BoardAssets>::new())
-                ;
+                .add_plugin(InspectorPlugin::<BoardAssets>::new());
         }
     }
 }
@@ -84,7 +80,7 @@ pub fn create_grid(
     assets: Res<BoardAssets>,
 ) {
     // let mut rng = rand::thread_rng();
-    let grid = GridsnBricks::init(7,7);
+    let grid = GridsnBricks::init(7, 7);
     let size = menu.size / (grid.height() + 2 * 4) as f32;
     cmd.spawn_bundle(assets.bg.node(Style {
         position_type: PositionType::Absolute,

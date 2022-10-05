@@ -69,7 +69,6 @@ impl Dir {
         }
     }
 }
-use strum::IntoEnumIterator;
 use Dir::*;
 
 #[cfg_attr(feature = "debug", derive(bevy_inspector_egui::Inspectable))]
@@ -86,22 +85,29 @@ impl Dot {
             let mut cs = vec![ids.pop().unwrap()];
 
             let mut d = true;
-            while d{
+            while d {
                 d = false;
                 let mut i = 0;
                 while i < ids.len() {
-                    if cs.iter().any(|&x| x.0.abs_diff(ids[i].0) + x.1.abs_diff(ids[i].1) == 1) {
+                    if cs
+                        .iter()
+                        .any(|&x| x.0.abs_diff(ids[i].0) + x.1.abs_diff(ids[i].1) == 1)
+                    {
                         cs.push(ids[i]);
                         ids.remove(i);
                         d = true;
-                    } else {i+=1;}
+                    } else {
+                        i += 1;
+                    }
                 }
             }
             res.push(cs);
         }
         if res.is_empty() {
             vec![vec![]]
-        } else {res}
+        } else {
+            res
+        }
     }
 }
 
@@ -113,20 +119,20 @@ impl Brick {
     pub fn from(shape: Shape, dir: Dir) -> Self {
         Self(
             match (shape, dir) {
-                (O, _)            => vec![Dot(0, 0), Dot(1, 0), Dot(1, 1), Dot(0, 1)],
-                (L, Up)           => vec![Dot(1, 0), Dot(0, 0), Dot(0, 1), Dot(0, 2)],
-                (L, Right)        => vec![Dot(0, 0), Dot(0, 1), Dot(1, 1), Dot(2, 1)],
-                (L, Down)         => vec![Dot(0, 2), Dot(1, 2), Dot(1, 1), Dot(1, 0)],
-                (L, Left)         => vec![Dot(0, 0), Dot(1, 0), Dot(2, 0), Dot(2, 1)],
-                (T, Up)           => vec![Dot(0, 1), Dot(1, 1), Dot(2, 1), Dot(1, 0)],
-                (T, Right)        => vec![Dot(0, 1), Dot(1, 1), Dot(1, 0), Dot(1, 2)],
-                (T, Down)         => vec![Dot(0, 0), Dot(0, 1), Dot(0, 2), Dot(1, 1)],
-                (T, Left)         => vec![Dot(0, 0), Dot(0, 1), Dot(0, 2), Dot(1, 1)],
-                (S, Up | Down)    => vec![Dot(0, 0), Dot(1, 0), Dot(1, 1), Dot(2, 1)],
+                (O, _) => vec![Dot(0, 0), Dot(1, 0), Dot(1, 1), Dot(0, 1)],
+                (L, Up) => vec![Dot(1, 0), Dot(0, 0), Dot(0, 1), Dot(0, 2)],
+                (L, Right) => vec![Dot(0, 0), Dot(0, 1), Dot(1, 1), Dot(2, 1)],
+                (L, Down) => vec![Dot(0, 2), Dot(1, 2), Dot(1, 1), Dot(1, 0)],
+                (L, Left) => vec![Dot(0, 0), Dot(1, 0), Dot(2, 0), Dot(2, 1)],
+                (T, Up) => vec![Dot(0, 1), Dot(1, 1), Dot(2, 1), Dot(1, 0)],
+                (T, Right) => vec![Dot(0, 1), Dot(1, 1), Dot(1, 0), Dot(1, 2)],
+                (T, Down) => vec![Dot(0, 0), Dot(0, 1), Dot(0, 2), Dot(1, 1)],
+                (T, Left) => vec![Dot(0, 0), Dot(0, 1), Dot(0, 2), Dot(1, 1)],
+                (S, Up | Down) => vec![Dot(0, 0), Dot(1, 0), Dot(1, 1), Dot(2, 1)],
                 (S, Right | Left) => vec![Dot(0, 2), Dot(0, 1), Dot(1, 1), Dot(1, 0)],
-                (Z, Up | Down)    => vec![Dot(0, 1), Dot(1, 1), Dot(1, 0), Dot(2, 0)],
+                (Z, Up | Down) => vec![Dot(0, 1), Dot(1, 1), Dot(1, 0), Dot(2, 0)],
                 (Z, Right | Left) => vec![Dot(0, 0), Dot(0, 1), Dot(1, 1), Dot(1, 2)],
-                (I, Up | Down)    => vec![Dot(0, 0), Dot(0, 1), Dot(0, 2), Dot(0, 3)],
+                (I, Up | Down) => vec![Dot(0, 0), Dot(0, 1), Dot(0, 2), Dot(0, 3)],
                 (I, Right | Left) => vec![Dot(0, 0), Dot(1, 0), Dot(2, 0), Dot(3, 0)],
             },
             0,
@@ -155,12 +161,14 @@ impl Brick {
         .iter()
         .map(|&(shape, dir)| Self::from(shape, dir))
     }
-    pub fn orig(&self) -> u8 {self.1}
+    pub const fn _orig(&self) -> u8 {
+        self.1
+    }
     pub fn iter_for_width(&self, width: u8) -> impl Iterator<Item = usize> + '_ {
         self.0.iter().map(move |x| x.to_idx(self.1, width))
     }
 
-    pub fn contains(&self, id: usize, width: u8) -> bool {
+    pub fn _contains(&self, id: usize, width: u8) -> bool {
         self.iter_for_width(width).any(|x| x == id)
     }
     pub fn contains_any(&self, ids: &[usize], width: u8) -> bool {
@@ -176,7 +184,7 @@ impl Brick {
     pub fn dim_in(&self, dir: Dir) -> u8 {
         dir.if_h(self.width(), self.height())
     }
-    pub fn reshift_orig(&mut self,width: u8) {
+    pub fn reshift_orig(&mut self, width: u8) {
         let shift = self.0.iter().fold((3u8, 3u8), |a, &d| {
             (
                 if d.0 < a.0 { d.0 } else { a.0 },
@@ -196,19 +204,22 @@ impl Brick {
         trace!("After: {self:?} dg: {dot_groups:?}");
         self.0 = dot_groups.pop().unwrap();
         self.reshift_orig(width);
-        dot_groups.iter().map(|g| {
-            let mut b = Self(g.to_vec(),orig,self.2);
-            b.reshift_orig(width);
-            b
-        }).collect()
+        dot_groups
+            .iter()
+            .map(|g| {
+                let mut b = Self(g.to_vec(), orig, self.2);
+                b.reshift_orig(width);
+                b
+            })
+            .collect()
     }
 }
 
 #[cfg_attr(feature = "debug", derive(bevy_inspector_egui::Inspectable))]
 #[derive(Debug, Clone, Default)]
-pub struct Grid<T: Default> {
-    grid: Vec<T>,
-    bricks: Vec<Brick>,
-    total: u8,
-    width: u8,
+pub struct _Grid<T: Default> {
+    _grid: Vec<T>,
+    _bricks: Vec<Brick>,
+    _total: u8,
+    _width: u8,
 }

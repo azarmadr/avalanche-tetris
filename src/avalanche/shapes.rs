@@ -11,6 +11,8 @@ pub enum Shape {
     T,
     Z,
 }
+use std::collections::HashMap;
+
 use Shape::*;
 
 #[cfg_attr(feature = "debug", derive(bevy_inspector_egui::Inspectable))]
@@ -72,7 +74,7 @@ impl Dir {
 use Dir::*;
 
 #[cfg_attr(feature = "debug", derive(bevy_inspector_egui::Inspectable))]
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Hash, Eq, PartialEq, Default)]
 pub struct Dot(pub u8, pub u8);
 impl Dot {
     pub const fn to_idx(self, orig: u8, width: u8) -> usize {
@@ -111,12 +113,13 @@ impl Dot {
     }
 }
 
+/// A HashMap of dots and their values
 #[cfg_attr(feature = "debug", derive(bevy_inspector_egui::Inspectable))]
 #[derive(Debug, Clone, Default)]
-pub struct Brick(pub Vec<Dot>, pub u8, pub Shape);
+pub struct Brick(pub HashMap<u8, u8>);
 
 impl Brick {
-    pub fn from(shape: Shape, dir: Dir) -> Self {
+    pub fn from(shape: Shape, dir: Dir, orig: u8, width: u8) -> Self {
         Self(
             match (shape, dir) {
                 (O, _) => vec![Dot(0, 0), Dot(1, 0), Dot(1, 1), Dot(0, 1)],
@@ -134,13 +137,14 @@ impl Brick {
                 (Z, Right | Left) => vec![Dot(0, 0), Dot(0, 1), Dot(1, 1), Dot(1, 2)],
                 (I, Up | Down) => vec![Dot(0, 0), Dot(0, 1), Dot(0, 2), Dot(0, 3)],
                 (I, Right | Left) => vec![Dot(0, 0), Dot(1, 0), Dot(2, 0), Dot(3, 0)],
-            },
-            0,
-            shape,
+            }
+            .iter()
+            .map(|d| (d.to_idx(orig, width) as u8, 0))
+            .collect(),
         )
     }
 
-    pub fn iterator() -> impl Iterator<Item = Self> {
+    pub fn iterator(orig: u8, width: u8) -> impl Iterator<Item = Self> {
         [
             (O, Up),
             (L, Up),
@@ -159,46 +163,42 @@ impl Brick {
             (I, Right),
         ]
         .iter()
-        .map(|&(shape, dir)| Self::from(shape, dir))
+        .map(move |&(shape, dir)| Self::from(shape, dir, orig, width))
     }
-    pub const fn _orig(&self) -> u8 {
-        self.1
-    }
-    pub fn iter_for_width(&self, width: u8) -> impl Iterator<Item = usize> + '_ {
-        self.0.iter().map(move |x| x.to_idx(self.1, width))
-    }
+    // pub fn iter_for_width(&self, width: u8) -> impl Iterator<Item = usize> + '_ {
+    //     self.0.iter().map(move |x| x.to_idx(self.1, width))
+    // }
 
-    pub fn _contains(&self, id: usize, width: u8) -> bool {
-        self.iter_for_width(width).any(|x| x == id)
-    }
+    // pub fn _contains(&self, id: usize, width: u8) -> bool {
+    //     self.iter_for_width(width).any(|x| x == id)
+    // }
     pub fn contains_any(&self, ids: &[usize], width: u8) -> bool {
-        self.iter_for_width(width)
-            .any(|x| ids.iter().any(|&y| x == y))
+        self.0.keys().any(|&x| ids.iter().any(|&y| x == y as u8))
     }
-    pub fn height(&self) -> u8 {
-        self.0.iter().fold(0, |a, x| if x.1 > a { x.1 } else { a })
-    }
-    pub fn width(&self) -> u8 {
-        self.0.iter().fold(0, |a, x| if x.0 > a { x.0 } else { a })
-    }
-    pub fn dim_in(&self, dir: Dir) -> u8 {
-        dir.if_h(self.width(), self.height())
-    }
-    pub fn reshift_orig(&mut self, width: u8) {
-        let shift = self.0.iter().fold((3u8, 3u8), |a, &d| {
-            (
-                if d.0 < a.0 { d.0 } else { a.0 },
-                if d.1 < a.1 { d.1 } else { a.1 },
-            )
-        });
-        self.1 += shift.0 + width * shift.1;
-        self.0.iter_mut().for_each(|d| {
-            d.0 -= shift.0;
-            d.1 -= shift.1
-        });
-    }
+    // pub fn height(&self) -> u8 {
+    //     self.0.iter().fold(0, |a, x| if x.1 > a { x.1 } else { a })
+    // }
+    // pub fn width(&self) -> u8 {
+    //     self.0.iter().fold(0, |a, x| if x.0 > a { x.0 } else { a })
+    // }
+    // pub fn dim_in(&self, dir: Dir) -> u8 {
+    //     dir.if_h(self.width(), self.height())
+    // }
+    // pub fn reshift_orig(&mut self, width: u8) {
+    //     let shift = self.0.iter().fold((3u8, 3u8), |a, &d| {
+    //         (
+    //             if d.0 < a.0 { d.0 } else { a.0 },
+    //             if d.1 < a.1 { d.1 } else { a.1 },
+    //         )
+    //     });
+    //     self.1 += shift.0 + width * shift.1;
+    //     self.0.iter_mut().for_each(|d| {
+    //         d.0 -= shift.0;
+    //         d.1 -= shift.1
+    //     });
+    // }
+
     pub fn cut_at(&mut self, ids: &[usize], width: u8) -> Vec<Self> {
-        let orig = self.1;
         self.0.retain(|d| !ids.contains(&d.to_idx(self.1, width)));
         let mut dot_groups = Dot::group_connected(&self.0);
         trace!("After: {self:?} dg: {dot_groups:?}");
@@ -207,7 +207,7 @@ impl Brick {
         dot_groups
             .iter()
             .map(|g| {
-                let mut b = Self(g.to_vec(), orig, self.2);
+                let mut b = Self(g.to_vec(), orig);
                 b.reshift_orig(width);
                 b
             })

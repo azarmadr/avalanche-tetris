@@ -12,7 +12,7 @@ use super::shapes::{Brick, Dir};
 pub type Sq = u8;
 
 fn can_occupy(grid: &[Sq], width: u8, brick: &Brick) -> bool {
-    info!("{width} {brick:?}");
+    trace!("{width} {brick:?}");
     !brick.iter_for_width(width).any(|d| grid[d] > 0)
 }
 
@@ -26,17 +26,19 @@ fn occupy(grid: &mut [Sq], width: u8, brick: &Brick) -> bool {
 
 #[cfg_attr(feature = "debug", derive(bevy_inspector_egui::Inspectable))]
 #[derive(Debug, Clone, Default)]
-pub struct GridsnBricks {
+pub struct Game {
     grid: Vec<Sq>,
     tray: HashMap<Dir, Vec<Sq>>,
     pub bricks: Vec<Brick>,
     pub tray_bricks: HashMap<Dir, Vec<Brick>>,
     width: u8,
     height: u8,
+    turn: u8,
     score: u32,
+    pub play: Option<Dir>,
 }
 
-impl GridsnBricks {
+impl Game {
     pub fn init(height: u8, width: u8) -> Self {
         let mut ret = Self {
             grid: vec![0; (height * width).into()],
@@ -47,7 +49,9 @@ impl GridsnBricks {
             tray_bricks: Dir::iter().map(|dir| (dir, vec![])).collect(),
             width,
             height,
+            turn: 0,
             score: 0,
+            play: None
         };
         ret.gen_tray_brick();
         ret
@@ -121,7 +125,8 @@ impl GridsnBricks {
 
     /// 1. try to move bricks on the grid
     /// 2. then bring from the tray
-    pub fn play(&mut self, dir: &Dir) {
+    pub fn play(&mut self) {
+        let dir = self.play.unwrap();
         let mut dirty = true;
         let mut ids = Vec::new();
         while dirty {
@@ -132,28 +137,31 @@ impl GridsnBricks {
                 Dir::Left => x - 1,
                 Dir::Right => x + 1,
             };
-            for (i, b) in self.bricks.iter_mut().enumerate() {
-                if ids.contains(&i) {
-                    continue;
-                }
-                let orig_p = dir.if_h(b.1 % self.width, b.1 / self.width);
-                if dir.if_tr(orig_p + b.dim_in(*dir) < self.width - 1, orig_p > 0) {
-                    b.iter_for_width(self.width).for_each(|d| self.grid[d] = 0);
-                    if !b
-                        .iter_for_width(self.width)
-                        .any(|d| self.grid[delta(d)] > 0)
-                    {
-                        b.1 = delta(b.1 as usize) as u8;
+            for (i, b) in self.bricks.iter_mut().enumerate().filter(|(i,_)|!ids.contains(i)) {
+                //let orig_p = dir.if_h(b.1 % self.width, b.1 / self.width);
+                if !b.0.keys().any(|i|match dir {
+                    Dir::Up=> i/self.width == self.width-1,
+                    Dir::Down=>i/self.width == 0,
+                    Dir::Left=>i%self.width == 0,
+                    Dir::Right=>i%self.width == self.width -1,
+                }) {
+                    b.0.keys().for_each(|&d| self.grid[d as usize] = 0);
+                    if !b.0.keys().any(|&d| self.grid[delta(d as usize)] > 0) {
+                        for (k,v) in b.0.drain() {
+                            let k1 = delta(k as usize) as u8;
+                            b.0.insert(k1, v);
+                        }
                         dirty = true;
                         ids.push(i)
                     }
-                    b.iter_for_width(self.width).for_each(|d| self.grid[d] = 1);
+                    b.0.keys().for_each(|&d| self.grid[d as usize] = 1);
                 } else {
                     ids.push(i)
                 }
             }
         }
         self.tray_to_grid(&dir.opp());
+        self.play = None;
     }
 
     pub fn clear_lines(&mut self) -> Vec<usize> {
@@ -299,18 +307,24 @@ impl GridsnBricks {
                     });
             });
     }
+    pub const fn turn(&self) -> u8 {
+        self.turn
+    }
+    pub fn inc_turn(&mut self) {
+        self.turn = self.turn.wrapping_add(1);
+    }
     pub const fn score(&self) -> u32 {
         self.score
     }
 }
-impl Deref for GridsnBricks {
+impl Deref for Game {
     type Target = Vec<Sq>;
 
     fn deref(&self) -> &Self::Target {
         &self.grid
     }
 }
-impl DerefMut for GridsnBricks {
+impl DerefMut for Game {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.grid
     }
